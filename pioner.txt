@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CRM Агентства</title>
+    <style>
+        /* ================= ОБЩИЕ СТИЛИ ================= */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #121212; color: #e0e0e0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+
+        /* ================= ЭКРАН ВХОДА ================= */
+        #login-screen { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #121212; width: 100%; }
+        .login-box { background: #1e1e1e; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; width: 320px; }
+        .login-box h2 { margin-bottom: 20px; color: #fff; }
+        .login-box select { width: 100%; padding: 12px; margin-bottom: 15px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 6px; outline: none; font-size: 15px; cursor: pointer; }
+        .login-box input { width: 100%; padding: 12px; margin-bottom: 15px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 6px; outline: none; font-size: 15px; }
+        .login-box button { width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; font-size: 16px; }
+        .login-box button:hover { background: #2563eb; }
+        .error-msg { color: #ef4444; font-size: 14px; margin-bottom: 10px; display: none; }
+
+        /* ================= ОСНОВНОЕ ПРИЛОЖЕНИЕ ================= */
+        #app-screen { display: none; flex-direction: column; height: 100vh; width: 100%; }
+        .view-section { display: none; flex-direction: column; height: 100%; }
+        .view-section.active { display: flex; }
+
+        .header { background: #1e1e24; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; min-height: 70px; flex-wrap: wrap; gap: 10px;}
+        .header-left { display: flex; align-items: center; gap: 15px; font-size: 18px; font-weight: bold; }
+        .btn-back { background: transparent; border: 1px solid #555; color: #aaa; padding: 8px 15px; border-radius: 6px; cursor: pointer; transition: 0.3s; font-size: 14px;}
+        .btn-back:hover { background: #333; color: #fff; }
+        .btn-logout { background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 8px 15px; border-radius: 6px; cursor: pointer; transition: 0.3s; font-size: 14px;}
+        .btn-logout:hover { background: rgba(239, 68, 68, 0.1); }
+
+        .finance-summary { display: flex; align-items: center; justify-content: space-around; background-color: #181820; border: 2px solid #4CAF50; border-radius: 12px; padding: 8px 20px; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.15); }
+        .summary-item { display: flex; flex-direction: column; align-items: center; }
+        .finance-summary .label { font-size: 11px; color: #a0a0a0; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
+        .finance-summary .value { font-size: 18px; font-weight: bold; color: #fff; }
+        .finance-summary .value.paid { color: #4CAF50; }
+        .finance-summary .divider { font-size: 22px; color: #444; margin: 0 15px; }
+
+        .list-content { padding: 20px; overflow-y: auto; flex: 1; }
+        .card-item { background: #1e1e24; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s;}
+        .card-item:hover { border-color: #3b82f6; transform: translateY(-2px); }
+        .card-item .title { font-size: 16px; font-weight: bold; color: #fff; margin-bottom: 4px; }
+        .card-item .subtitle { font-size: 13px; color: #888; }
+        .btn-danger { background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; white-space: nowrap;}
+        
+        .create-form { background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px dashed #444; margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;}
+        .create-form input, .create-form select { flex: 1; padding: 10px; background: #2a2a2a; border: 1px solid #333; color: #fff; border-radius: 6px; outline: none; min-width: 150px;}
+
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 350px; background: #1a1a1a; padding: 20px; overflow-y: auto; border-right: 1px solid #333; display: flex; flex-direction: column; flex-shrink: 0;}
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 12px; color: #888; margin-bottom: 5px; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; background: #2a2a2a; border: 1px solid #333; color: #fff; border-radius: 6px; outline: none; font-size: 14px; }
+        .form-group input:focus, .form-group textarea:focus { border-color: #3b82f6; }
+        .form-group input:disabled { background: #1f1f1f; color: #666; cursor: not-allowed; border-color: #222; }
+        
+        .phone-row { display: flex; gap: 10px; }
+        .phone-row input { flex: 1; }
+        .btn-copy { background: #333; border: 1px solid #444; color: #ccc; padding: 0 10px; border-radius: 6px; cursor: pointer; font-size: 13px; text-decoration: none; display: flex; align-items: center; justify-content: center;}
+        .btn-copy:hover { background: #444; color: #fff; }
+
+        .reward-box { background: #142e1a; border: 1px solid #1f4f2d; padding: 15px; border-radius: 8px; margin-top: 20px; }
+        .reward-box h3 { font-size: 14px; color: #4CAF50; margin-bottom: 15px; text-transform: uppercase; }
+        .reward-box .total-text { font-size: 16px; font-weight: bold; color: #fff; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #1f4f2d; }
+
+        .btn-save { width: 100%; padding: 14px; margin-top: 20px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; box-shadow: 0 4px 10px rgba(76, 175, 80, 0.2); }
+        .btn-save:hover { background: #45a049; }
+
+        .content-area { flex: 1; display: flex; flex-direction: column; background: #121212; }
+        .chat-history { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;}
+        .chat-message { background: #1e1e24; border: 1px solid #333; padding: 12px; border-radius: 12px; border-top-left-radius: 4px; max-width: 80%; }
+        .chat-meta { font-size: 11px; color: #888; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;}
+        .chat-text { font-size: 14px; line-height: 1.4; word-wrap: break-word; }
+        .mention { color: #58a6ff; font-weight: bold; background: rgba(88, 166, 255, 0.1); padding: 0 4px; border-radius: 4px; }
+        .btn-edit-msg { background: none; border: none; color: #888; cursor: pointer; font-size: 12px; padding: 0; }
+        .btn-edit-msg:hover { color: #3b82f6; }
+
+        .chat-input-area { padding: 15px 20px; background: #1e1e24; border-top: 1px solid #333; display: flex; gap: 10px; }
+        .chat-input-area input { flex: 1; padding: 12px; background: #2a2a2a; border: 1px solid #333; color: #fff; border-radius: 6px; outline: none; font-size: 16px; }
+        .chat-input-area button { background: #3b82f6; color: white; border: none; padding: 0 20px; border-radius: 6px; cursor: pointer; }
+
+        @media (max-width: 800px) {
+            .main-content { flex-direction: column; }
+            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #333; max-height: 55vh; }
+            .header { flex-direction: column; align-items: stretch; }
+            .header-left { justify-content: space-between; }
+            .finance-summary { width: 100%; margin-top: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ЭКРАН ВХОДА -->
+    <div id="login-screen">
+        <div class="login-box">
+            <h2>Вход в систему</h2>
+            <div class="error-msg" id="error-msg">Неверный ПИН-код</div>
+            <select id="login-name">
+                <option value="" disabled selected>Выберите пользователя...</option>
+                <option value="Администратор">Администратор</option>
+                <option value="Никита">Никита</option>
+                <option value="Давид">Давид</option>
+                <option value="Денис">Денис</option>
+                <option value="Маргарита">Маргарита</option>
+            </select>
+            <input type="password" id="login-pin" placeholder="Введите ПИН-код" maxlength="4">
+            <button onclick="login()">Войти</button>
+        </div>
+    </div>
+
+    <!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
+    <div id="app-screen">
+        
+        <!-- ЭКРАН 1: СПИСОК ЖК -->
+        <div id="view-complexes" class="view-section active">
+            <div class="header">
+                <div class="header-left"><span>Здравствуйте, <span id="current-user-name">...</span></span></div>
+                <button class="btn-logout" onclick="logout()">Выйти</button>
+            </div>
+            <div class="list-content">
+                <h2 style="margin-bottom: 20px;">Список ЖК</h2>
+                <div id="admin-create-complex" class="create-form" style="display: none;">
+                    <input type="text" id="new-complex-name" placeholder="Название нового ЖК...">
+                    <button class="btn-save" style="width: auto; margin: 0; padding: 10px 20px;" onclick="createComplex()">Создать</button>
+                </div>
+                <div id="complexes-list"></div>
+            </div>
+        </div>
+
+        <!-- ЭКРАН 2: СПИСОК КЛИЕНТОВ -->
+        <div id="view-clients" class="view-section">
+            <div class="header">
+                <div class="header-left">
+                    <button class="btn-back" onclick="navTo('complexes')">← ЖК</button>
+                    <span id="current-complex-name">ЖК</span>
+                </div>
+                <div class="finance-summary">
+                    <div class="summary-item"><span class="label">Ожидается</span><span class="value" id="total-expected-complex">0 ₽</span></div>
+                    <div class="divider">/</div>
+                    <div class="summary-item"><span class="label">Выплачено</span><span class="value paid" id="total-paid-complex">0 ₽</span></div>
+                </div>
+                <button class="btn-logout" onclick="logout()">Выйти</button>
+            </div>
+            <div class="list-content">
+                <div class="create-form" style="border-color: #3b82f6;">
+                    <input type="text" id="new-client-name" placeholder="ФИО">
+                    <input type="tel" id="new-client-phone" placeholder="Телефон">
+                    <input type="text" id="new-client-apt" placeholder="Квартира">
+                    <select id="new-client-agent">
+                        <option value="Никита">Никита</option><option value="Давид">Давид</option>
+                        <option value="Денис">Денис</option><option value="Маргарита">Маргарита</option>
+                    </select>
+                    <button class="btn-save" style="width: auto; margin: 0; padding: 10px 20px;" onclick="createClient()">Добавить</button>
+                </div>
+                <div id="clients-list"></div>
+            </div>
+        </div>
+
+        <!-- ЭКРАН 3: КАРТОЧКА КЛИЕНТА -->
+        <div id="view-details" class="view-section">
+            <div class="header">
+                <div class="header-left">
+                    <button class="btn-back" onclick="navTo('clients')">← Назад</button>
+                    <span id="detail-header-name">Клиент</span>
+                </div>
+                <div class="finance-summary">
+                    <div class="summary-item"><span class="label">Ожидается</span><span class="value" id="total-expected">0 ₽</span></div>
+                    <div class="divider">/</div>
+                    <div class="summary-item"><span class="label">Выплачено</span><span class="value paid" id="total-paid">0 ₽</span></div>
+                </div>
+                <button class="btn-logout" onclick="logout()">Выйти</button>
+            </div>
+            <div class="main-content">
+                <div class="sidebar">
+                    <div class="form-group"><label>ФИО</label><input type="text" id="fio"></div>
+                    <div class="form-group"><label>Номер квартиры</label><input type="text" id="apartment"></div>
+                    <div class="form-group">
+                        <label>Телефон</label>
+                        <div class="phone-row">
+                            <input type="tel" id="phone">
+                            <button class="btn-copy" onclick="copyPhone()" title="Копировать">📋</button>
+                            <a id="call-link" href="#" class="btn-copy" title="Позвонить">📞</a>
+                        </div>
+                    </div>
+                    <div class="form-group"><label>Адрес</label><input type="text" id="address" placeholder="Не указан"></div>
+                    <div class="form-group"><label>Бюджет</label><input type="text" id="budget" placeholder="Не указан"></div>
+                    <div class="reward-box">
+                        <h3>Вознаграждение</h3>
+                        <div class="form-group"><label>Ожидаемое (₽) <span style="color:#ef4444; font-size:10px;" id="admin-only-label"></span></label><input type="number" id="input-expected" class="admin-only" oninput="updateTotals()"></div>
+                        <div class="form-group"><label>Выплачено (₽)</label><input type="number" id="input-paid" class="admin-only" oninput="updateTotals()"></div>
+                        <div class="total-text" id="sidebar-total">Итого: 0 ₽ / 0 ₽</div>
+                    </div>
+                    <div class="form-group" style="margin-top: 20px;"><label>Описание</label><textarea id="description" rows="3" placeholder="Дополнительная информация..."></textarea></div>
+                    <div class="form-group"><label>Ответственный агент</label><input type="text" id="client-agent" disabled></div>
+                    <button class="btn-save" onclick="saveClientData()">💾 Сохранить изменения</button>
+                    <button id="btn-delete-client" class="btn-danger" style="width: 100%; margin-top: 10px; padding: 14px; display: none;" onclick="deleteClient()">Удалить клиента</button>
+                </div>
+                <div class="content-area">
+                    <div class="chat-history" id="chat-history"></div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chat-input" placeholder="Написать в чат..." onkeypress="if(event.key === 'Enter') sendMessage()">
+                        <button onclick="sendMessage()">➤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // ================= ИМПОРТ FIREBASE =================
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+
+        // ================= ⚠️ ВСТАВЬ СВОИ КЛЮЧИ СЮДА ⚠️ =================
+        // Скопируй блок const firebaseConfig = {...} из нового проекта "Пионер CRM"
+        const firebaseConfig = {
+            apiKey: "ТВОЙ_API_KEY",
+            authDomain: "crm-pioner.firebaseapp.com",
+            databaseURL: "https://crm-pioner-default-rtdb.firebaseio.com",
+            projectId: "crm-pioner",
+            storageBucket: "crm-pioner.appspot.com",
+            messagingSenderId: "ТВОЙ_SENDER_ID",
+            appId: "ТВОЙ_APP_ID"
+        };
+        // ==================================================================
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const dbRef = ref(db, 'crm_data');
+
+        // ================= ДАННЫЕ И СОСТОЯНИЕ =================
+        const USERS = { "Администратор": "8831", "Никита": "7492", "Давид": "3185", "Денис": "9041", "Маргарита": "5628" };
+        const ADMINS = ["Администратор"]; 
+        let currentUser = null;
+
+        let localData = {
+            complexes: [ { id: '1', name: 'ЖК Северный Парк' }, { id: '2', name: 'ЖК Зеленый' } ],
+            clients: [ { id: '101', complexId: '1', agent: 'Никита', name: 'Иванов Иван', phone: '+7 (999) 111-22-33', apartment: '45', address: 'ул. Ленина, д. 5', budget: '5 000 000', expected: '150000', paid: '30000', description: 'Ищет с ремонтом.', messages: [{author: 'Никита', text: 'Звонил клиенту', time: '12:00'}] } ]
+        };
+
+        let state = { complexId: null, clientId: null };
+
+        // ================= СИНХРОНИЗАЦИЯ С FIREBASE =================
+        onValue(dbRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                localData = data;
+            } else {
+                set(dbRef, localData);
+            }
+            if (currentUser) {
+                const activeView = document.querySelector('.view-section.active').id;
+                if (activeView === 'view-complexes') renderComplexes();
+                if (activeView === 'view-clients') renderClients();
+                if (activeView === 'view-details') renderDetails();
+            }
+        });
+
+        function saveDataToFirebase() { set(dbRef, localData); }
+
+        // ================= АВТОРИЗАЦИЯ =================
+        window.login = function() {
+            const nameInput = document.getElementById('login-name').value;
+            const pinInput = document.getElementById('login-pin').value.trim();
+            const errorMsg = document.getElementById('error-msg');
+
+            if (nameInput && USERS[nameInput] && USERS[nameInput] === pinInput) {
+                currentUser = nameInput;
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-screen').style.display = 'flex';
+                document.getElementById('current-user-name').textContent = currentUser;
+                document.getElementById('error-msg').style.display = 'none';
+                document.getElementById('login-pin').value = '';
+                navTo('complexes');
+            } else {
+                errorMsg.style.display = 'block';
+            }
+        };
+
+        window.logout = function() {
+            currentUser = null;
+            document.getElementById('login-name').value = '';
+            document.getElementById('login-pin').value = '';
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('app-screen').style.display = 'none';
+            state = { complexId: null, clientId: null };
+        };
+
+        window.navTo = function(viewName) {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('view-' + viewName).classList.add('active');
+            
+            if (viewName === 'complexes') renderComplexes();
+            if (viewName === 'clients') renderClients();
+            if (viewName === 'details') renderDetails();
+        };
+
+        // ================= РЕНДЕР ЭКРАНОВ =================
+        function renderComplexes() {
+            const list = document.getElementById('complexes-list');
+            const isAdmin = ADMINS.includes(currentUser);
+            document.getElementById('admin-create-complex').style.display = isAdmin ? 'flex' : 'none';
+
+            list.innerHTML = localData.complexes.map(jk => `
+                <div class="card-item" onclick="selectComplex('${jk.id}')">
+                    <div><div class="title">🏢 ${jk.name}</div></div>
+                    ${isAdmin ? `<button class="btn-danger" onclick="deleteComplex(event, '${jk.id}')">Удалить</button>` : ''}
+                </div>
+            `).join('');
+        }
+
+        window.createComplex = function() {
+            if (!ADMINS.includes(currentUser)) return;
+            const name = document.getElementById('new-complex-name').value.trim();
+            if (!name) return;
+            localData.complexes.push({ id: Date.now().toString(), name: name });
+            saveDataToFirebase();
+            document.getElementById('new-complex-name').value = '';
+        };
+
+        window.deleteComplex = function(event, id) {
+            event.stopPropagation();
+            if (!ADMINS.includes(currentUser)) return;
+            if (confirm('Удалить ЖК и всех его клиентов?')) {
+                localData.complexes = localData.complexes.filter(j => j.id !== id);
+                localData.clients = localData.clients.filter(c => c.complexId !== id);
+                saveDataToFirebase();
+            }
+        };
+
+        window.selectComplex = function(id) {
+            state.complexId = id;
+            const jk = localData.complexes.find(j => j.id === id);
+            document.getElementById('current-complex-name').textContent = jk.name;
+            navTo('clients');
+        };
+
+        function renderClients() {
+            const list = document.getElementById('clients-list');
+            if (!state.complexId) return;
+            const isAdmin = ADMINS.includes(currentUser);
+
+            let clients = localData.clients.filter(c => c.complexId === state.complexId);
+            if (!isAdmin) clients = clients.filter(c => c.agent === currentUser);
+
+            let totalExp = 0, totalPaid = 0;
+            clients.forEach(c => { totalExp += Number(c.expected) || 0; totalPaid += Number(c.paid) || 0; });
+            document.getElementById('total-expected-complex').textContent = formatMoney(totalExp);
+            document.getElementById('total-paid-complex').textContent = formatMoney(totalPaid);
+
+            const agentSelect = document.getElementById('new-client-agent');
+            if (!isAdmin) { agentSelect.value = currentUser; agentSelect.disabled = true; } else { agentSelect.disabled = false; }
+
+            if (clients.length === 0) { list.innerHTML = '<div style="color: #888;">Нет клиентов</div>'; return; }
+
+            list.innerHTML = clients.map(client => {
+                const exp = Number(client.expected) || 0, paid = Number(client.paid) || 0;
+                const moneyStr = (exp > 0 || paid > 0) ? ` · 💰 ${formatMoney(paid)} / ${formatMoney(exp)}` : '';
+                return `
+                    <div class="card-item" onclick="selectClient('${client.id}')">
+                        <div>
+                            <div class="title">${client.name}</div>
+                            <div class="subtitle">Кв. ${client.apartment} · Тел: ${client.phone} · Агент: ${client.agent}${moneyStr}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.createClient = function() {
+            if (!state.complexId) return;
+            const name = document.getElementById('new-client-name').value.trim();
+            const phone = document.getElementById('new-client-phone').value.trim();
+            const apt = document.getElementById('new-client-apt').value.trim();
+            const agent = document.getElementById('new-client-agent').value;
+            if (!name || !phone || !apt) { alert('Заполните поля!'); return; }
+
+            localData.clients.push({
+                id: Date.now().toString(), complexId: state.complexId, agent: agent,
+                name: name, phone: phone, apartment: apt, address: '', budget: '', description: '', expected: '', paid: '', messages: []
+            });
+            saveDataToFirebase();
+            document.getElementById('new-client-name').value = '';
+            document.getElementById('new-client-phone').value = '';
+            document.getElementById('new-client-apt').value = '';
+        };
+
+        window.selectClient = function(id) {
+            state.clientId = id;
+            navTo('details');
+        };
+
+        function renderDetails() {
+            const client = localData.clients.find(c => c.id === state.clientId);
+            if (!client) return;
+            const isAdmin = ADMINS.includes(currentUser);
+
+            document.getElementById('detail-header-name').textContent = client.name;
+            document.getElementById('fio').value = client.name || '';
+            document.getElementById('apartment').value = client.apartment || '';
+            document.getElementById('phone').value = client.phone || '';
+            document.getElementById('address').value = client.address || '';
+            document.getElementById('budget').value = client.budget || '';
+            document.getElementById('input-expected').value = client.expected || '';
+            document.getElementById('input-paid').value = client.paid || '';
+            document.getElementById('description').value = client.description || '';
+            document.getElementById('client-agent').value = client.agent || '';
+
+            const phoneLink = client.phone ? client.phone.replace(/[^\d+]/g, '') : '';
+            document.getElementById('call-link').href = 'tel:' + phoneLink;
+
+            const adminFields = document.querySelectorAll('.admin-only');
+            adminFields.forEach(field => { field.disabled = !isAdmin; field.style.cursor = isAdmin ? 'text' : 'not-allowed'; });
+            document.getElementById('admin-only-label').textContent = isAdmin ? '' : '(только админ)';
+            document.getElementById('btn-delete-client').style.display = isAdmin ? 'block' : 'none';
+
+            renderChat(client);
+            updateTotals();
+        }
+
+        function formatMoney(amount) { return amount.toLocaleString('ru-RU') + ' ₽'; }
+
+        window.updateTotals = function() {
+            const expected = Number(document.getElementById('input-expected').value) || 0;
+            const paid = Number(document.getElementById('input-paid').value) || 0;
+            document.getElementById('total-expected').textContent = formatMoney(expected);
+            document.getElementById('total-paid').textContent = formatMoney(paid);
+            document.getElementById('sidebar-total').textContent = `Итого: ${formatMoney(paid)} / ${formatMoney(expected)}`;
+        };
+
+        window.saveClientData = function() {
+            const client = localData.clients.find(c => c.id === state.clientId);
+            if (!client) return;
+            const isAdmin = ADMINS.includes(currentUser);
+
+            client.name = document.getElementById('fio').value;
+            client.apartment = document.getElementById('apartment').value;
+            client.phone = document.getElementById('phone').value;
+            client.address = document.getElementById('address').value;
+            client.budget = document.getElementById('budget').value;
+            client.description = document.getElementById('description').value;
+            if (isAdmin) {
+                client.expected = document.getElementById('input-expected').value;
+                client.paid = document.getElementById('input-paid').value;
+            }
+
+            saveDataToFirebase();
+            document.getElementById('detail-header-name').textContent = client.name;
+            const phoneLink = client.phone ? client.phone.replace(/[^\d+]/g, '') : '';
+            document.getElementById('call-link').href = 'tel:' + phoneLink;
+            alert('✅ Данные сохранены в облако!');
+        };
+
+        window.deleteClient = function() {
+            if (!ADMINS.includes(currentUser)) return;
+            if (confirm('Удалить этого клиента?')) {
+                localData.clients = localData.clients.filter(c => c.id !== state.clientId);
+                saveDataToFirebase();
+                navTo('clients');
+            }
+        };
+
+        window.copyPhone = function() {
+            const phone = document.getElementById('phone').value;
+            if (!phone) return;
+            navigator.clipboard.writeText(phone).then(() => alert('Номер скопирован: ' + phone)).catch(()=>alert('Ошибка'));
+        };
+
+        // ================= ЧАТ =================
+        function renderChat(client) {
+            const container = document.getElementById('chat-history');
+            if (!client.messages || client.messages.length === 0) {
+                container.innerHTML = '<div style="color: #555; text-align: center; margin-top: 20px;">Нет записей.</div>';
+                return;
+            }
+            container.innerHTML = client.messages.map((msg, index) => {
+                const textWithMentions = msg.text.replace(/(@[А-Яа-яA-Za-z0-9_]+)/g, '<span class="mention">$1</span>');
+                const editBtn = msg.author === currentUser ? `<button class="btn-edit-msg" onclick="editMessage(${index})">✏️ Ред.</button>` : '';
+                return `
+                    <div class="chat-message">
+                        <div class="chat-meta"><span>${msg.author} · ${msg.time}</span>${editBtn}</div>
+                        <div class="chat-text">${textWithMentions}</div>
+                    </div>
+                `;
+            }).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        window.sendMessage = function() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            const client = localData.clients.find(c => c.id === state.clientId);
+            if (!client.messages) client.messages = [];
+            client.messages.push({ author: currentUser, text: text, time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) });
+            saveDataToFirebase();
+            input.value = '';
+        };
+
+        window.editMessage = function(index) {
+            const client = localData.clients.find(c => c.id === state.clientId);
+            if (!client || !client.messages[index]) return;
+            const currentText = client.messages[index].text;
+            const newText = prompt("Редактировать сообщение:", currentText);
+            if (newText !== null) {
+                if (newText.trim() === "") {
+                    if(confirm("Текст пустой. Удалить сообщение?")) client.messages.splice(index, 1);
+                } else {
+                    client.messages[index].text = newText.trim();
+                }
+                saveDataToFirebase();
+            }
+        };
+    </script>
+</body>
+</html>
